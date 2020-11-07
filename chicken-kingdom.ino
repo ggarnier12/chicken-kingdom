@@ -459,6 +459,7 @@ void openDoor()
   IsOpening=true;
   Serial.println("++ OPEN");
   digitalWrite(LED_BUILTIN, HIGH);
+  sendData();
   for (int i = 0; i <= stepsToOpenOrClose*0.25; i++) {
     if (i%(int(1000/millsBetweenSteps))==0){
       server.handleClient();
@@ -515,6 +516,7 @@ void closeDoor()
   IsClosing=true;
   Serial.println("++ CLOSE");
   digitalWrite(LED_BUILTIN, LOW);
+  sendData();
   for (int i = 0; i <= stepsToOpenOrClose*0.25; i++) {
     if (i%(int(1000/millsBetweenSteps))==0){
       server.handleClient();
