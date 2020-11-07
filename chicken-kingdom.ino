@@ -138,13 +138,28 @@ float getTemperatureC()
 ///////////////////////////////////////////
 /// Function to send data through Wifi ///
 /////////////////////////////////////////
+//Function to describe door status in a simple string based on status booleans
+String DoorStatus(){
+  String doorstatus = "";
+  if (IsOpening){
+    doorstatus = "opening" ;
+  } else if (IsClosing) {
+    doorstatus = "closing" ;
+  } else if (IsOpen) {
+    doorstatus = "open" ;
+  } else {
+    doorstatus = "closed" ;
+  }
+  return doorstatus;
+}
+
 void sendData()
 {
   //sends 
   if(WiFi.status()== WL_CONNECTED){
       HTTPClient http;
       char serverPath[100]="";
-      snprintf(serverPath, sizeof(serverPath), ServerQuery, getTemperatureC(), getHumidity(), lightValue, DoorStatus());
+      snprintf(serverPath, sizeof(serverPath), ServerQuery, getTemperatureC(), getHumidity(), lightValue, DoorStatus().c_str());
       http.begin(serverPath);
       // Send HTTP GET request
       int httpResponseCode = http.GET();
@@ -229,21 +244,6 @@ void handle_reboot() {
 void handle_NotFound(){
   //return error 404
   server.send(404, "text/plain", "Not found");
-}
-
-//Function to describe door status in a simple string based on status booleans
-String DoorStatus(){
-  String doorstatus = "";
-  if (IsOpening){
-    doorstatus = "opening" ;
-  } else if (IsClosing) {
-    doorstatus = "closing" ;
-  } else if (IsOpen) {
-    doorstatus = "open" ;
-  } else {
-    doorstatus = "closed" ;
-  }
-  return doorstatus;
 }
 
 /////////////////////////////////////////////
