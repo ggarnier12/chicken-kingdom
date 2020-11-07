@@ -144,7 +144,7 @@ void sendData()
   if(WiFi.status()== WL_CONNECTED){
       HTTPClient http;
       char serverPath[100]="";
-      snprintf(serverPath, sizeof(serverPath), ServerQuery, getTemperatureC(), getHumidity(), lightValue, IsOpen ? "open" : "closed");
+      snprintf(serverPath, sizeof(serverPath), ServerQuery, getTemperatureC(), getHumidity(), lightValue, DoorStatus());
       http.begin(serverPath);
       // Send HTTP GET request
       int httpResponseCode = http.GET();
@@ -231,6 +231,21 @@ void handle_NotFound(){
   server.send(404, "text/plain", "Not found");
 }
 
+//Function to describe door status in a simple string based on status booleans
+String DoorStatus(){
+  String doorstatus = "";
+  if (IsOpening){
+    doorstatus = "opening" ;
+  } else if (IsClosing) {
+    doorstatus = "closing" ;
+  } else if (IsOpen) {
+    doorstatus = "open" ;
+  } else {
+    doorstatus = "closed" ;
+  }
+  return doorstatus;
+}
+
 /////////////////////////////////////////////
 ///      Main HTML Page for server       ///
 ///////////////////////////////////////////
@@ -259,15 +274,7 @@ String HTMLPage(){
   ptr += String(lightClosingThreshold);
   ptr +="</p>\n";
   ptr +="<p>The door is ";
-  if (IsOpening){
-    ptr += "opening" ;
-  } else if (IsClosing) {
-    ptr += "closing" ;
-  } else if (IsOpen) {
-    ptr += "open" ;
-  } else {
-    ptr += "closed" ;
-  }
+  ptr += DoorStatus();
   ptr +="</p>\n";
   ptr +="<p>The door opening mode is ";
   ptr += DoorAuto ? "automatic" : "manual" ;
