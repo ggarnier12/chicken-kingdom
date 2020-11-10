@@ -55,7 +55,7 @@ ESP8266WebServer server(80);
 const int secondsBetweenChecks=2;
 const int secondsBetweenSend=60*15;//as to be longer than time between checks
 unsigned long lastSendingTime = secondsBetweenSend*1000;//in milliseconds
-int lightValue  = analogRead(LDRpin);
+float lightValue  = (float) analogRead(LDRpin);
 
 //////////////////////////////////////////////////
 /// Function to get Humidity data from sensor ///
@@ -337,7 +337,7 @@ void setup()
   pinMode(GPIOStep3, OUTPUT);
   pinMode(GPIOStep4, OUTPUT);
   freeMotor();
-  lightValue  = analogRead(LDRpin);
+  lightValue  = (float)analogRead(LDRpin);
   // we consider that if the reset/start occur when light is on, it is the day, the door is already open 
   //(this logic provides robustness in case of short duration of power cut)
   if (lightValue > (lightOpeningThreshold + lightClosingThreshold)*0.5)
@@ -578,7 +578,7 @@ void loop()
   //////////////////////////////////////////////////////
   //// measure light and start stepper if necessary ///
   ////////////////////////////////////////////////////
-  lightValue  = analogRead(LDRpin);
+  lightValue  = 0.9*lightValue+0.1*analogRead(LDRpin);
   if (verbose) {
     Serial.print("Light value [0-1023] : ");
     Serial.println(lightValue); //uncomment to ease calibration
