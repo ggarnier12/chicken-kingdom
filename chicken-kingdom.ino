@@ -8,7 +8,7 @@
 
 // Wifi settings
 #include "my-keys.h"
-#define ServerQuery "http://192.168.1.100:1880/update-chicken-sensors?temperature=%2.1f&RH=%2.1f&Light=%d&door_is=%s"
+#define ServerQuery "http://192.168.1.100:1880/update-chicken-sensors?temperature=%2.1f&RH=%2.1f&Light=%d&door_is=%s&LED_is=%s"
 IPAddress staticIP(192,168,1,99);
 IPAddress gateway(192,168,1,1);
 IPAddress subnet(255,255,255,0);
@@ -27,26 +27,35 @@ const int millsBetweenSteps= 10;//10ms corresponds to 100Hz supposed for max tor
 const int lightOpeningThreshold = 100;
 const int lightClosingThreshold = 17;
 
+//minimum light time per day
+const unsigned long minimumLightTimeSec=10*60*60;
+unsigned long dayStart=-minimumLightTimeSec*1000;
+
 //status booleans
 boolean IsOpen;
 boolean IsOpening=false;
 boolean IsClosing=false;
 boolean DoorAuto=true;
+boolean IsLEDOn=false;
 const boolean verbose=true;
 
 //LDR pin
 #define LDRpin A0 // ESP8266 Analog Pin ADC0 = A0
 
 //stepper pins GPIO
-#define GPIOStep1 15 //14
-#define GPIOStep2 13 //12
-#define GPIOStep3 12 //13
-#define GPIOStep4 14 //15
+#define GPIOStep1 15
+#define GPIOStep2 13
+#define GPIOStep3 12
+#define GPIOStep4 14
 
 // Si7021 pins GPIO and I2C address
 #define si7021SdaGPIO 4 // pins D1=5
 #define si7021SclGPIO 5 // pins D2=4
 #define si7021Addr 0x40 // SI7021 I2C address is 0x40(64)
+
+// Light pin
+#define LEDGPIO 7
+
 
 // initialize web server
 ESP8266WebServer server(80);
@@ -159,7 +168,7 @@ void sendData()
   if(WiFi.status()== WL_CONNECTED){
       HTTPClient http;
       char serverPath[100]="";
-      snprintf(serverPath, sizeof(serverPath), ServerQuery, getTemperatureC(), getHumidity(), lightValue, DoorStatus().c_str());
+      snprintf(serverPath, sizeof(serverPath), ServerQuery, getTemperatureC(), getHumidity(), lightValue, DoorStatus().c_str(),IsLEDOn?"on":"off");
       http.begin(serverPath);
       // Send HTTP GET request
       int httpResponseCode = http.GET();
@@ -276,6 +285,9 @@ String HTMLPage(){
   ptr +="<p>The door is ";
   ptr += DoorStatus();
   ptr +="</p>\n";
+  ptr +="<p>The LED is ";
+  ptr += IsLEDOn?"on":"off";
+  ptr +="</p>\n";
   ptr +="<p>The door opening mode is ";
   ptr += DoorAuto ? "automatic" : "manual" ;
   ptr +="</p>\n";
@@ -330,8 +342,9 @@ void setup()
   delay(300);
 
   
-  ////   STEPPER AND LDR SETUP ////
+  ////   STEPPER, LDR AND EXTERNAL LED SETUP ////
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(LEDGPIO, OUTPUT);
   pinMode(GPIOStep1, OUTPUT);
   pinMode(GPIOStep2, OUTPUT);
   pinMode(GPIOStep3, OUTPUT);
@@ -587,15 +600,30 @@ void loop()
   {
     // Opening:
     openDoor();
+    // record time of day start
+    dayStart=millis();
   }
   else if (lightValue < lightClosingThreshold && IsOpen==true && DoorAuto)
   {
     // Closing:
     closeDoor();
+    //once door is closed, if the time of light was too low, light up the LED
+    if ((unsigned long)(millis() - dayStart) < minimumLightTimeSec*1000){
+      digitalWrite(LEDGPIO, HIGH);
+      IsLEDOn=true;
+    }
+  }
+
+  // if the LED is on, check the duration of light time to shut it down on time
+  if (IsLEDOn) {
+    if ((unsigned long)(millis() - dayStart) >= minimumLightTimeSec*1000){
+      digitalWrite(LEDGPIO, LOW);
+      IsLEDOn=false;      
+    }
   }
 
   // send data through wifi
-  if (millis()<lastSendingTime || millis()>lastSendingTime+secondsBetweenSend*1000){
+  if ((unsigned long)(millis() - lastSendingTime) >= secondsBetweenSend*1000){
     lastSendingTime=millis();
     sendData();
   }
