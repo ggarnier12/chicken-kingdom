@@ -54,7 +54,7 @@ const boolean verbose=true;
 #define si7021Addr 0x40 // SI7021 I2C address is 0x40(64)
 
 // Light pin
-#define LEDGPIO 7
+#define LEDGPIO 2
 
 
 // initialize web server
