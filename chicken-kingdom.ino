@@ -28,8 +28,10 @@ const int lightOpeningThreshold = 100;
 const int lightClosingThreshold = 17;
 
 //minimum light time per day
-const unsigned long minimumLightTimeSec=11*60*60;
-unsigned long dayStart=-minimumLightTimeSec*1000;
+const unsigned long minimumLightTime=11*60*60*1000;//milliseconds
+unsigned long dayStart=0;//-minimumLightTimeSec*1000;
+unsigned long lightStop;//milliseconds
+unsigned long addLightDuration=60*1000;//milliseconds
 
 //status booleans
 boolean IsOpen;
@@ -255,6 +257,30 @@ void handle_NotFound(){
   server.send(404, "text/plain", "Not found");
 }
 
+void handle_addlighton() {
+  //set light on for a period of time if it is it not already, otherwise add the amount of time to light duration
+  if (IsLEDOn){
+    lightStop=(unsigned long)(lightStop + addLightDuration);
+//    dayStart=(unsigned long)(dayStart - addLightDuration);
+    server.send(200, "text/html", HTMLRedirect(1,"OK, added light duration")); 
+  }
+  else {
+    IsLEDOn=true;
+    digitalWrite(LEDGPIO, HIGH);
+    lightStop=(unsigned long)(millis() + addLightDuration);
+//    dayStart=(unsigned long)(millis() - addLightDuration);
+    server.send(200, "text/html", HTMLRedirect(1,"OK, light turned ON for short duration")); 
+  }
+}
+
+void handle_setlightoff() {
+  //set light off, whatever the remaining time of light duration
+  digitalWrite(LEDGPIO, LOW);
+  IsLEDOn=false;      
+  server.send(200, "text/html", HTMLRedirect(1,"OK, light if OFF")); 
+}
+
+
 /////////////////////////////////////////////
 ///      Main HTML Page for server       ///
 ///////////////////////////////////////////
@@ -266,14 +292,14 @@ String HTMLPage(){
   ptr +="<title>Chickens Kingdom</title>\n";
   ptr +="</head>\n";
   ptr +="<body>\n";
-  ptr +="<h1>Sensor data</h1>\n";
+  ptr +="<h1>Status</h1>\n";
   ptr +="<p>Temperature : ";
   ptr += String(getTemperatureC());
   ptr +="</p>\n";
   ptr +="<p>Humidity : ";
   ptr += String(getHumidity());
   ptr +="</p>\n";
-  ptr +="<p>Light value (0 to 1023) : ";
+  ptr +="<p>Light value (0 to 1024) : ";
   ptr += String(lightValue);
   ptr +="</p>\n";
   ptr +="<p>Opening if light over : ";
@@ -286,12 +312,19 @@ String HTMLPage(){
   ptr += DoorStatus();
   ptr +="</p>\n";
   ptr +="<p>The LED is ";
-  ptr += IsLEDOn?"on":"off";
+  if (IsLEDOn){
+    int LEDmin=(int)((unsigned long)(lightStop - millis())/1000/60);
+    int LEDsec=(int)((unsigned long)(lightStop - millis())/1000)%60;
+    ptr += "ON for " + String(LEDmin) + "min "+ String(LEDsec) + "sec ";
+  } 
+  else {
+    ptr += "OFF";
+  }
   ptr +="</p>\n";
   ptr +="<p>The door opening mode is ";
   ptr += DoorAuto ? "automatic" : "manual" ;
   ptr +="</p>\n";
-  ptr +="<h1>SETUP</h1>\n";
+  ptr +="<h1>Actions</h1>\n";
   ptr +="<form method=\"get\">\n";
   if (DoorAuto) {
     // in automatic mode, buttons to tell the door is actually open if the system thinks it is close and vice versa
@@ -310,6 +343,15 @@ String HTMLPage(){
     ptr +="<input type=\"button\" value=\"Close the door\" onclick=\"window.location.href='/closedoor'\">\n";
     ptr +="<input type=\"button\" value=\"Door Auto Mode\" onclick=\"window.location.href='/doorautoon'\">\n";
   }
+  ptr +="<br/>";
+  if (IsLEDOn){
+    ptr +="<input type=\"button\" value=\"Add Light ON duration\" onclick=\"window.location.href='/addlighton'\">\n";
+    ptr +="<input type=\"button\" value=\"Turn Light OFF\" onclick=\"window.location.href='/setlightoff'\">\n";
+  }
+  else{
+    ptr +="<input type=\"button\" value=\"Turn Light ON\" onclick=\"window.location.href='/addlighton'\">\n";    
+  }
+  ptr +="<br/>";
   ptr +="<input type=\"button\" value=\"Reboot\" onclick=\"window.location.href='/reboot'\">\n";
   ptr +="</form>\n";
   ptr +="</body>\n";
@@ -378,6 +420,8 @@ void setup()
   server.on("/opendoor", handle_openDoor);
   server.on("/closedoor", handle_closeDoor);
   server.on("/reboot", handle_reboot);
+  server.on("/setlightoff", handle_setlightoff);
+  server.on("/addlighton", handle_addlighton);
   server.onNotFound(handle_NotFound);
   server.begin();
 
@@ -588,9 +632,7 @@ void loop()
   ArduinoOTA.handle();
   server.handleClient();
 
-  //////////////////////////////////////////////////////
-  //// measure light and start stepper if necessary ///
-  ////////////////////////////////////////////////////
+  // measure light and start stepper if necessary
   lightValue  = 0.9*lightValue+0.1*analogRead(LDRpin);
   if (verbose) {
     Serial.print("Light value [0-1023] : ");
@@ -608,7 +650,8 @@ void loop()
     // Closing:
     closeDoor();
     //once door is closed, if the time of light was too low, light up the LED
-    if ((unsigned long)(millis() - dayStart) < minimumLightTimeSec*1000){
+    if ((unsigned long)(millis() - dayStart) < minimumLightTime){
+      lightStop=(unsigned long)(dayStart+minimumLightTime);
       digitalWrite(LEDGPIO, HIGH);
       IsLEDOn=true;
     }
@@ -616,7 +659,9 @@ void loop()
 
   // if the LED is on, check the duration of light time to shut it down on time
   if (IsLEDOn) {
-    if ((unsigned long)(millis() - dayStart) >= minimumLightTimeSec*1000){
+    //check if the light Stop time is passed. 
+    //Second condition is to avoid misinterpretation in case of lightStop reaching long max size, considering each check is within 5 min !
+    if ((millis()>lightStop) && ((unsigned long)(millis()-lightStop)<1000*60*5)){
       digitalWrite(LEDGPIO, LOW);
       IsLEDOn=false;      
     }
