@@ -340,21 +340,21 @@ String HTMLPage(){
     else {
       ptr +="<input type=\"button\" value=\"Tell door is open\" onclick=\"window.location.href='/doorisopen'\">\n";
     }
-    ptr +="<input type=\"button\" value=\"Door Manual mode\" onclick=\"window.location.href='/doorautooff'\">\n";
+    ptr +="<input type=\"button\" value=\"Switch to door manual mode\" onclick=\"window.location.href='/doorautooff'\">\n";
   }
   else {
     // in manual mode, buttons open and close the door plus a button to turn to automatic mode
     ptr +="<input type=\"button\" value=\"Open the door\" onclick=\"window.location.href='/opendoor'\">\n";
     ptr +="<input type=\"button\" value=\"Close the door\" onclick=\"window.location.href='/closedoor'\">\n";
-    ptr +="<input type=\"button\" value=\"Door Auto Mode\" onclick=\"window.location.href='/doorautoon'\">\n";
+    ptr +="<input type=\"button\" value=\"Switch to door automatic mode\" onclick=\"window.location.href='/doorautoon'\">\n";
   }
   ptr +="<br/>";
   if (IsLEDOn){
-    ptr +="<input type=\"button\" value=\"Add Light ON duration\" onclick=\"window.location.href='/addlighton'\">\n";
-    ptr +="<input type=\"button\" value=\"Turn Light OFF\" onclick=\"window.location.href='/setlightoff'\">\n";
+    ptr +="<input type=\"button\" value=\"Add light ON duration\" onclick=\"window.location.href='/addlighton'\">\n";
+    ptr +="<input type=\"button\" value=\"Turn light OFF\" onclick=\"window.location.href='/setlightoff'\">\n";
   }
   else{
-    ptr +="<input type=\"button\" value=\"Turn Light ON\" onclick=\"window.location.href='/addlighton'\">\n";    
+    ptr +="<input type=\"button\" value=\"Turn light ON\" onclick=\"window.location.href='/addlighton'\">\n";    
   }
   ptr +="<br/>";
   ptr +="<input type=\"button\" value=\"Reboot\" onclick=\"window.location.href='/reboot'\">\n";
