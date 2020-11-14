@@ -8,7 +8,7 @@
 
 // Wifi settings
 #include "my-keys.h"
-#define ServerQuery "http://192.168.1.100:1880/update-chicken-sensors?temperature=%2.1f&RH=%2.1f&Light=%d&door_is=%s&LED_is=%s"
+#define ServerQuery "http://192.168.1.100:1880/update-chicken-sensors?temp=%2.1f&RH=%2.1f&Light=%d&door=%s&LED=%s"
 IPAddress staticIP(192,168,1,99);
 IPAddress gateway(192,168,1,1);
 IPAddress subnet(255,255,255,0);
@@ -28,7 +28,7 @@ const int lightOpeningThreshold = 100;
 const int lightClosingThreshold = 17;
 
 //minimum light time per day
-const unsigned long minimumLightTimeSec=10*60*60;
+const unsigned long minimumLightTimeSec=11*60*60;
 unsigned long dayStart=-minimumLightTimeSec*1000;
 
 //status booleans
@@ -54,7 +54,7 @@ const boolean verbose=true;
 #define si7021Addr 0x40 // SI7021 I2C address is 0x40(64)
 
 // Light pin
-#define LEDGPIO 2
+#define LEDGPIO 2 // D4
 
 
 // initialize web server
@@ -168,7 +168,7 @@ void sendData()
   if(WiFi.status()== WL_CONNECTED){
       HTTPClient http;
       char serverPath[100]="";
-      snprintf(serverPath, sizeof(serverPath), ServerQuery, getTemperatureC(), getHumidity(), lightValue, DoorStatus().c_str(),IsLEDOn?"on":"off");
+      snprintf(serverPath, 250, ServerQuery, getTemperatureC(), getHumidity(), (int)round(lightValue), DoorStatus().c_str(),IsLEDOn?"on":"off");
       http.begin(serverPath);
       // Send HTTP GET request
       int httpResponseCode = http.GET();
