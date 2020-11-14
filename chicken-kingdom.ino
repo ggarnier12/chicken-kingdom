@@ -29,7 +29,8 @@ const int lightClosingThreshold = 17;
 
 //minimum light time per day
 const unsigned long minimumLightTime=11*60*60*1000;//milliseconds
-unsigned long dayStart=0;//-minimumLightTimeSec*1000;
+unsigned long dayStart=0;//milliseconds
+unsigned long dayStop=0;//milliseconds
 unsigned long lightStop;//milliseconds
 unsigned long addLightDuration=60*1000;//milliseconds
 
@@ -310,12 +311,16 @@ String HTMLPage(){
   ptr +="</p>\n";
   ptr +="<p>The door is ";
   ptr += DoorStatus();
+  if (DoorStatus()=="open"){
+    ptr += " for " + millisToNiceStr((unsigned long)(millis()- dayStart));
+  }
+  else if (DoorStatus()=="closed"){
+    ptr += " for " + millisToNiceStr((unsigned long)(millis()- dayStop));
+  }
   ptr +="</p>\n";
   ptr +="<p>The LED is ";
   if (IsLEDOn){
-    int LEDmin=(int)((unsigned long)(lightStop - millis())/1000/60);
-    int LEDsec=(int)((unsigned long)(lightStop - millis())/1000)%60;
-    ptr += "ON for " + String(LEDmin) + "min "+ String(LEDsec) + "sec ";
+    ptr += "ON for " + millisToNiceStr((unsigned long)(lightStop - millis()));
   } 
   else {
     ptr += "OFF";
@@ -358,6 +363,19 @@ String HTMLPage(){
   ptr +="</html>\n";
   return ptr;
 }
+
+String millisToNiceStr(unsigned long millisecondsValue){
+  String niceStr = "";
+  int niceHours=(int)((unsigned long)(millisecondsValue)/1000/60/60);
+  int niceMin=(int)((unsigned long)(millisecondsValue)/1000/60)%60;
+  int niceSec=(int)((unsigned long)(millisecondsValue)/1000)%60;
+  if (niceHours>0){
+    niceStr+= String(niceHours) + " hours ";
+  }
+  niceStr += String(niceMin) + "min "+ String(niceSec) + "sec ";
+  return niceStr;
+}
+
 
 String HTMLRedirect(int seconds,String message){
   //builds an html page that redirects to main page after some seconds and with a message
@@ -649,6 +667,8 @@ void loop()
   {
     // Closing:
     closeDoor();
+    // record time of day stop
+    dayStop=millis();
     //once door is closed, if the time of light was too low, light up the LED
     if ((unsigned long)(millis() - dayStart) < minimumLightTime){
       lightStop=(unsigned long)(dayStart+minimumLightTime);
