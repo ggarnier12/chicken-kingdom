@@ -405,6 +405,7 @@ void setup()
   ////   STEPPER, LDR AND EXTERNAL LED SETUP ////
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(LEDGPIO, OUTPUT);
+  digitalWrite(LEDGPIO, LOW);
   pinMode(GPIOStep1, OUTPUT);
   pinMode(GPIOStep2, OUTPUT);
   pinMode(GPIOStep3, OUTPUT);
