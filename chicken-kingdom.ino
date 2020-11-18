@@ -278,7 +278,7 @@ void handle_setlightoff() {
   //set light off, whatever the remaining time of light duration
   digitalWrite(LEDGPIO, LOW);
   IsLEDOn=false;      
-  server.send(200, "text/html", HTMLRedirect(1,"OK, light if OFF")); 
+  server.send(200, "text/html", HTMLRedirect(1,"OK, light turned OFF")); 
 }
 
 
@@ -312,15 +312,15 @@ String HTMLPage(){
   ptr +="<p>The door is ";
   ptr += DoorStatus();
   if (DoorStatus()=="open"){
-    ptr += " for " + millisToNiceStr((unsigned long)(millis()- dayStart));
+    ptr += " for last " + millisToNiceStr((unsigned long)(millis()- dayStart));
   }
   else if (DoorStatus()=="closed"){
-    ptr += " for " + millisToNiceStr((unsigned long)(millis()- dayStop));
+    ptr += " for last " + millisToNiceStr((unsigned long)(millis()- dayStop));
   }
   ptr +="</p>\n";
   ptr +="<p>The LED is ";
   if (IsLEDOn){
-    ptr += "ON for " + millisToNiceStr((unsigned long)(lightStop - millis()));
+    ptr += "ON for next " + millisToNiceStr((unsigned long)(lightStop - millis()));
   } 
   else {
     ptr += "OFF";
@@ -403,7 +403,6 @@ void setup()
 
   
   ////   STEPPER, LDR AND EXTERNAL LED SETUP ////
-  pinMode(LED_BUILTIN, OUTPUT);
   pinMode(LEDGPIO, OUTPUT);
   digitalWrite(LEDGPIO, LOW);
   pinMode(GPIOStep1, OUTPUT);
@@ -417,13 +416,11 @@ void setup()
   if (lightValue > (lightOpeningThreshold + lightClosingThreshold)*0.5)
   {
   Serial.println("Starting with daylight, door considered open");
-      digitalWrite(LED_BUILTIN, HIGH);
       IsOpen=true;
   }
   else if (lightValue < (lightOpeningThreshold + lightClosingThreshold)*0.5)
   {
   Serial.println("Starting at night, door considered closed");
-      digitalWrite(LED_BUILTIN, LOW);
       IsOpen=false;
   }
 
@@ -534,7 +531,6 @@ void openDoor()
 {
   IsOpening=true;
   Serial.println("++ OPEN");
-  digitalWrite(LED_BUILTIN, HIGH);
   sendData();
   for (int i = 0; i <= stepsToOpenOrClose*0.25; i++) {
     if (i%(int(1000/millsBetweenSteps))==0){
@@ -591,7 +587,6 @@ void closeDoor()
 {
   IsClosing=true;
   Serial.println("++ CLOSE");
-  digitalWrite(LED_BUILTIN, LOW);
   sendData();
   for (int i = 0; i <= stepsToOpenOrClose*0.25; i++) {
     if (i%(int(1000/millsBetweenSteps))==0){
