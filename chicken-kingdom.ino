@@ -27,6 +27,10 @@ const int millsBetweenSteps= 10;//10ms corresponds to 100Hz supposed for max tor
 const int lightOpeningThreshold = 100;
 const int lightClosingThreshold = 17;
 
+//Additional timer before closing
+const int millsToWaitBeforeClosing= 1000*60*15;//15 minutes * 60 secondes/minutes * 1000 millis/sec
+boolean IsDoorPendingClosing=false;
+
 //minimum light time per day
 const unsigned long minimumLightTime=11*60*60*1000;//milliseconds
 unsigned long dayStart=0;//milliseconds
@@ -291,23 +295,18 @@ String HTMLPage(){
   ptr +="<html>\n";
   ptr +="<head>\n";
   ptr +="<title>Chickens Kingdom</title>\n";
+  ptr +="<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n";
   ptr +="</head>\n";
   ptr +="<body>\n";
   ptr +="<h1>Status</h1>\n";
-  ptr +="<p>Temperature : ";
+  ptr +="<p>Temperature: ";
   ptr += String(getTemperatureC());
   ptr +="</p>\n";
-  ptr +="<p>Humidity : ";
+  ptr +="<p>Humidity: ";
   ptr += String(getHumidity());
   ptr +="</p>\n";
-  ptr +="<p>Light value (0 to 1024) : ";
+  ptr +="<p>Light value (0 to 1024): ";
   ptr += String(lightValue);
-  ptr +="</p>\n";
-  ptr +="<p>Opening if light over : ";
-  ptr += String(lightOpeningThreshold);
-  ptr +="</p>\n";
-  ptr +="<p>Closing if light below : ";
-  ptr += String(lightClosingThreshold);
   ptr +="</p>\n";
   ptr +="<p>The door is ";
   ptr += DoorStatus();
@@ -315,7 +314,7 @@ String HTMLPage(){
     ptr += " for last " + millisToNiceStr((unsigned long)(millis()- dayStart));
   }
   else if (DoorStatus()=="closed"){
-    ptr += " for last " + millisToNiceStr((unsigned long)(millis()- dayStop));
+    ptr += " for last " + millisToNiceStr((unsigned long)(millis()- dayStop - millsToWaitBeforeClosing));
   }
   ptr +="</p>\n";
   ptr +="<p>The LED is ";
@@ -359,6 +358,16 @@ String HTMLPage(){
   ptr +="<br/>";
   ptr +="<input type=\"button\" value=\"Reboot\" onclick=\"window.location.href='/reboot'\">\n";
   ptr +="</form>\n";
+  ptr +="<h1>Parameters</h1>\n";
+  ptr +="<p>Opening if light over: ";
+  ptr += String(lightOpeningThreshold);
+  ptr +="</p>\n";
+  ptr +="<p>Closing if light below: ";
+  ptr += String(lightClosingThreshold);
+  ptr +="</p>\n";
+  ptr +="<p>Additional time before closing the door at sunset: ";
+  ptr += millisToNiceStr(millsToWaitBeforeClosing);
+  ptr +="</p>\n";
   ptr +="</body>\n";
   ptr +="</html>\n";
   return ptr;
@@ -661,15 +670,24 @@ void loop()
   }
   else if (lightValue < lightClosingThreshold && IsOpen==true && DoorAuto)
   {
-    // Closing:
-    closeDoor();
+    IsDoorPendingClosing=true;
     // record time of day stop
     dayStop=millis();
-    //once door is closed, if the time of light was too low, light up the LED
-    if ((unsigned long)(millis() - dayStart) < minimumLightTime){
+    //once sun is down, if the time of light was too low, light up the LED
+    if ((unsigned long)(dayStop - dayStart) < minimumLightTime){
       lightStop=(unsigned long)(dayStart+minimumLightTime);
       digitalWrite(LEDGPIO, HIGH);
       IsLEDOn=true;
+    }
+  }
+
+  if (IsDoorPendingClosing)
+  {
+    if ((unsigned long)(millis() - dayStop) > millsToWaitBeforeClosing)
+    {
+      IsDoorPendingClosing=false;
+      // Closing:
+      closeDoor();
     }
   }
 
