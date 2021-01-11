@@ -28,7 +28,7 @@ const int lightOpeningThreshold = 100;
 const int lightClosingThreshold = 17;
 
 //Additional timer before closing
-const int millsToWaitBeforeClosing= 1000*60*15;//15 minutes * 60 secondes/minutes * 1000 millis/sec
+const unsigned long millsToWaitBeforeClosing= 1000*60*15;//15 minutes * 60 secondes/minutes * 1000 millis/sec
 boolean IsDoorPendingClosing=false;
 
 //minimum light time per day
@@ -308,6 +308,9 @@ String HTMLPage(){
   ptr +="<p>Light value (0 to 1024): ";
   ptr += String(lightValue);
   ptr +="</p>\n";
+  if (IsDoorPendingClosing==true){
+    ptr += "<p> the door is pending closing for "+millisToNiceStr((unsigned long)(millis() - dayStop))+"</p>\n";
+  }
   ptr +="<p>The door is ";
   ptr += DoorStatus();
   if (DoorStatus()=="open"){
@@ -367,6 +370,18 @@ String HTMLPage(){
   ptr +="</p>\n";
   ptr +="<p>Additional time before closing the door at sunset: ";
   ptr += millisToNiceStr(millsToWaitBeforeClosing);
+  ptr +="</p>\n";
+  ptr +="<p>Minimum duration of light: ";
+  ptr += millisToNiceStr(minimumLightTime);
+  ptr +="</p>\n";
+  ptr +="<p>Closing and opening duration (due to motor speed): ";
+  ptr += millisToNiceStr(stepsToOpenOrClose*millsBetweenSteps);
+  ptr +="</p>\n";
+  ptr +="<p>Time between light checks: ";
+  ptr += millisToNiceStr((unsigned long)secondsBetweenChecks*1000);
+  ptr +="</p>\n";
+  ptr +="<p>Time between data send: ";
+  ptr += millisToNiceStr((unsigned long)secondsBetweenSend*1000);
   ptr +="</p>\n";
   ptr +="</body>\n";
   ptr +="</html>\n";
