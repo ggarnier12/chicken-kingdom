@@ -1,5 +1,5 @@
 # chicken-kingdom
-Arduino-like code for a Nodemcu to automatically open and close a chicken door, record temperature and humidity
+Arduino-like code for a Nodemcu to automatically open and close a chicken door, record temperature and humidity, and set light on at sunset if the duration fo the day was to short, so as to reach a minimal duration of light per day.
 
 ## Full system documentation
 The link below describe the full system to perform the functions, including mechanics, electronic board and sensors:
