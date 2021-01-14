@@ -683,7 +683,7 @@ void loop()
     // record time of day start
     dayStart=millis();
   }
-  else if (lightValue < lightClosingThreshold && IsOpen==true && DoorAuto)
+  else if (lightValue < lightClosingThreshold && IsOpen && DoorAuto && IsDoorPendingClosing==false)
   {
     IsDoorPendingClosing=true;
     // record time of day stop
