@@ -8,17 +8,17 @@
 
 // Wifi settings
 #include "my-keys.h"
-#define ServerQuery "http://192.168.1.100:1880/update-chicken-sensors?temp=%2.1f&RH=%2.1f&Light=%d&door=%s&LED=%s"
-IPAddress staticIP(192,168,1,99);
-IPAddress gateway(192,168,1,1);
+#define ServerQuery "http://192.168.0.100:1880/update-chicken-sensors?temp=%2.1f&RH=%2.1f&Light=%d&door=%s&LED=%s"
+IPAddress staticIP(192,168,0,99);
+IPAddress gateway(192,168,0,254);
 IPAddress subnet(255,255,255,0);
 
 //Calculation of the number of steps necessary for the motor(s) to open and close the door
 const int stepsPerRevolution = 2038;  // the number of steps per revolution
-const float doorDisplacementHeight = 300.0; //in mm the height of open door, also the length of rope to get
-const float shaftDiameter = 3.0; //in mm the diameter of the shaft on which the rope is rolled
+const float doorDisplacementHeight = 360.0; //in mm the height of open door, also the length of rope to get
+const float shaftDiameter = 4.4; //in mm the diameter of the shaft on which the rope is rolled, for accuracy, please include the rope diameter if non negligible (twice radius)
 const float reductionFactor = 1.0;// the reduction factor between the rotation of the motor and the shaft
-const float correctionFactor = 150.0/190.0*300.0/360.0*28/33;//from experience
+const float correctionFactor = 1.0;// use to tweak easily from experience
 const int turnsToOpenOrClose = correctionFactor*doorDisplacementHeight / shaftDiameter / 3.14 * reductionFactor;
 const long int stepsToOpenOrClose = stepsPerRevolution*turnsToOpenOrClose;
 const int millsBetweenSteps= 10;//10ms corresponds to 100Hz supposed for max torque with 28BYJ-48
@@ -173,10 +173,11 @@ void sendData()
 {
   //sends 
   if(WiFi.status()== WL_CONNECTED){
+      WiFiClient client;
       HTTPClient http;
       char serverPath[100]="";
       snprintf(serverPath, 250, ServerQuery, getTemperatureC(), getHumidity(), (int)round(lightValue), DoorStatus().c_str(),IsLEDOn?"on":"off");
-      http.begin(serverPath);
+      http.begin(client,serverPath);
       // Send HTTP GET request
       int httpResponseCode = http.GET();
       
@@ -447,6 +448,7 @@ void setup()
   Serial.println("Starting at night, door considered closed");
       IsOpen=false;
   }
+
 
   //// WIFI SETUP ////
   setupWifi();
